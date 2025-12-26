@@ -1,23 +1,26 @@
-# Comprehensive Task: Fix and Validate Logistics Routing System
+# Role & Objective
 
-## Overview
+You are a senior software engineer tasked with fixing critical bugs in a logistics routing system that incorrectly applies Dijkstra's algorithm to graphs containing negative-weight edges. You must create a fixed version of the project in a new workspace directory, implementing proper input validation, correcting algorithm defects, and optionally adding Bellman-Ford algorithm support for negative-weight graphs.
 
-You are tasked with fixing a broken Logistics Routing system and then performing a full validation of the fixed implementation. This task combines code fixing, testing, and validation in a single workflow.
+# Inputs & Context
 
----
+## Source Project Location
+- Buggy project located at: `./issue_project/`
+- Contains logistics routing system with algorithm selection and validation issues
+- Tests currently fail due to incorrect handling of negative-weight edges
 
-## PART 1: PROJECT FIX REQUIREMENTS
+## Target Workspace
+- Create all fixed project files under: `C:\BugBash\workSpace1\oswe-mini-prime-new`
+- Must create subdirectory: `fixed_project/` for the corrected implementation
 
-### Problem Project Overview
+## Project Background
+This is a logistics routing system that calculates shortest paths in directed graphs. The system currently forces the use of Dijkstra's algorithm on graphs containing negative-weight edges, violating Dijkstra's fundamental precondition (non-negative weights only) and producing suboptimal paths instead of the true shortest path.
 
-This project is a Logistics Routing system that suffers from **incorrect algorithm selection and missing input validation**. The code forces the use of Dijkstra's algorithm on a graph containing negative-weight edges, resulting in suboptimal paths instead of the true shortest path.
-
-### Project File Structure
-
+## Current Project Structure
 ```
-issue_project/
+./issue_project/
 ├── README.md                                    # Project documentation
-├── KNOWN_ISSUE.md                               # Detailed issue analysis
+├── KNOWN_ISSUE.md                               # Detailed bug analysis
 ├── requirements.txt                             # Dependencies (pytest==7.4.4)
 ├── pytest.ini                                   # Pytest configuration
 ├── data/
@@ -31,9 +34,7 @@ issue_project/
     └── test_routing_negative_weight.py         # Test file (currently failing)
 ```
 
-### Core Problem Description
-
-#### Problem Manifestation
+## Problem Manifestation
 
 **Test Graph Structure (Directed):**
 ```
@@ -48,246 +49,516 @@ E → B (weight: 6)
 
 **Path from A to B:**
 - **Theoretically Optimal Path**: `A → C → D → F → B`, Total Cost = **1**
-  - A→C: 2
-  - C→D: 1
-  - D→F: -3
-  - F→B: 1
+  - A→C: 2, C→D: 1, D→F: -3, F→B: 1
   - Total: 2 + 1 + (-3) + 1 = 1
 
-- **Actually Returned Path**: `A → B`, Total Cost = **5** (Wrong!)
+- **Actually Returned Path**: `A → B`, Total Cost = **5** (WRONG!)
 
-#### Root Cause
+## Root Causes Identified
 
-1. **Algorithm Precondition Violation**:
-   - Dijkstra's algorithm **does not support negative-weight edges**, but the code doesn't check for negative weights in the graph
-   - When negative weights exist, Dijkstra produces incorrect results
+### 1. Algorithm Precondition Violation
+- Dijkstra's algorithm does NOT support negative-weight edges
+- Code doesn't check for negative weights before running Dijkstra
+- When negative weights exist, Dijkstra produces incorrect results
 
-2. **Implementation Bug** (routing.py):
-   - **Premature Visit Marking**: Nodes are marked as visited when discovered (line 23), not when popped from the priority queue
-   - This prevents re-relaxation of visited nodes even when a better path is found
-   - Code snippet:
+### 2. Implementation Bug in routing.py
+- **Premature Visit Marking**: Nodes are marked as visited when discovered (line 23), not when finalized from priority queue
+- This prevents re-relaxation of visited nodes even when better paths are found
+- Buggy code pattern:
+  ```python
+  visited = set([start])  # Mark start immediately
+  ...
+  visited.add(neighbor)   # Mark neighbor on discovery, not finalization
+  ```
+
+### 3. Missing Input Validation
+- No detection of negative-weight edges before algorithm execution
+- No alternative algorithm provided (e.g., Bellman-Ford) for negative-weight graphs
+
+# Step-by-Step Instructions
+
+## Phase 1: Analysis & Understanding
+
+1. **Read all source files from the original project**:
+   - Search for all files in `./issue_project/` directory structure
+   - Read `./issue_project/src/logistics/routing.py` - examine Dijkstra implementation
+   - Read `./issue_project/src/logistics/graph.py` - examine graph data structure
+   - Read `./issue_project/tests/test_routing_negative_weight.py` - understand test expectations
+   - Read `./issue_project/data/graph_negative_weight.json` - examine test graph data
+   - Read `./issue_project/requirements.txt` - note dependencies (pytest==7.4.4)
+   - Read `./issue_project/pytest.ini` - understand test configuration
+   - Read `./issue_project/README.md` - project documentation
+
+2. **Identify specific bugs**:
+   - **Bug 1 (routing.py)**: Premature visit marking in Dijkstra
+     - Line ~23: `visited = set([start])` marks start immediately
+     - Should mark nodes as visited when FINALIZED (popped from priority queue), not when discovered
+   - **Bug 2 (routing.py)**: No negative weight validation
+     - Missing check: `if graph.has_negative_weights(): raise ValueError(...)`
+   - **Bug 3 (graph.py)**: Missing helper methods
+     - No `.edges()` method to iterate over all edges
+     - No `.has_negative_weights()` method to detect negative edges
+
+3. **Understand test expectations**:
+   - Test 1: `test_dijkstra_rejects_negative_weights` - expects `ValueError` when Dijkstra encounters negative weights
+   - Test 2: `test_dijkstra_finds_optimal_path_despite_negative_edge` - expects correct optimal path
+   - Test 3 (implied): Auto algorithm selection based on graph characteristics
+
+## Phase 2: Create Fixed Project Structure
+
+1. **Create directory structure** at `C:\BugBash\workSpace1\oswe-mini-prime-new\`:
+   - Create `fixed_project/` directory
+   - Create `fixed_project/data/` directory
+   - Create `fixed_project/src/` directory
+   - Create `fixed_project/src/logistics/` directory
+   - Create `fixed_project/tests/` directory
+
+2. **Complete file structure**:
+   ```
+   fixed_project/
+   ├── README.md                                    # Updated documentation
+   ├── requirements.txt                             # Dependencies
+   ├── pytest.ini                                   # Pytest configuration
+   ├── data/
+   │   └── graph_negative_weight.json              # Test graph data
+   ├── src/
+   │   └── logistics/
+   │       ├── __init__.py                         # Module initialization
+   │       ├── graph.py                            # ENHANCED with helper methods
+   │       └── routing.py                          # FIXED Dijkstra + NEW Bellman-Ford
+   └── tests/
+       └── test_routing_negative_weight.py         # UPDATED tests
+   ```
+
+## Phase 3: Implement Graph Enhancements (graph.py)
+
+1. **Add helper methods to Graph class**:
+   
+   **Method 1: `edges()` - Iterator for all edges**
+   - Purpose: Enable iteration over all edges in the graph
+   - Implementation: Yield tuples of `(source, target, weight)` for all edges
+   - Use case: Required for `has_negative_weights()` method
+
+   **Method 2: `has_negative_weights()` - Negative weight detection**
+   - Purpose: Check if graph contains any negative-weight edges
+   - Implementation:
      ```python
-     visited = set([start])  # Mark start node immediately
+     def has_negative_weights(self):
+         """Check if graph contains any negative-weight edges."""
+         for source, target, weight in self.edges():
+             if weight < 0:
+                 return True
+         return False
+     ```
+   - Use case: Input validation before running Dijkstra
+
+2. **Preserve existing functionality**:
+   - Keep all existing methods: `__init__`, `add_edge()`, `neighbors()`, `from_json()`, etc.
+   - Do NOT modify graph loading logic
+
+## Phase 4: Fix and Enhance Routing (routing.py)
+
+### 4.1 Fix Dijkstra's Algorithm
+
+1. **Add negative weight validation** at the beginning of `dijkstra_shortest_path()`:
+   ```python
+   def dijkstra_shortest_path(graph, start, end):
+       # ADDED: Validate graph doesn't contain negative weights
+       if graph.has_negative_weights():
+           raise ValueError("Graph contains negative-weight edges; Dijkstra is unsafe")
+       
+       # ... rest of implementation
+   ```
+
+2. **Fix visit marking logic**:
+   - **BEFORE (Buggy)**:
+     ```python
+     visited = set([start])  # Mark start immediately
      ...
-     visited.add(neighbor)   # Mark neighbor immediately upon discovery, not finalization
+     visited.add(neighbor)   # Mark on discovery
+     ```
+   
+   - **AFTER (Fixed)**:
+     ```python
+     visited = set()  # Start with empty set
+     ...
+     # When popping from priority queue (finalizing node):
+     current_node = heap.pop()[1]
+     if current_node in visited:
+         continue  # Skip already finalized nodes
+     visited.add(current_node)  # Mark as finalized HERE
+     
+     # When exploring neighbors:
+     if neighbor not in visited:  # Only relax if not finalized
+         # ... relaxation logic
      ```
 
-3. **Missing Input Validation**:
-   - No check for negative-weight edges before running Dijkstra
-   - No alternative algorithm provided for graphs with negative weights (e.g., Bellman-Ford)
+3. **Correct node finalization**:
+   - Mark nodes as visited only when popped from priority queue (finalized)
+   - Skip nodes that have already been finalized
+   - Allow re-discovery of nodes still in the queue (lower cost updates)
 
-#### Test Failures
+### 4.2 Implement Bellman-Ford Algorithm
 
-Both tests will fail:
+1. **Create new function `bellman_ford_shortest_path(graph, start, end)`**:
+   
+   **Algorithm Overview**:
+   - Time complexity: O(V × E) - slower than Dijkstra but supports negative weights
+   - Relaxes all edges V-1 times (V = number of vertices)
+   - Detects negative-weight cycles on Vth iteration
+   
+   **Implementation Requirements**:
+   ```python
+   def bellman_ford_shortest_path(graph, start, end):
+       """
+       Find shortest path using Bellman-Ford algorithm.
+       Supports negative-weight edges but not negative-weight cycles.
+       
+       Returns: (path_list, total_cost)
+       Raises: ValueError if negative-weight cycle detected
+       """
+       # 1. Initialize distances (all infinity except start=0)
+       # 2. Relax all edges V-1 times
+       # 3. Check for negative cycles (Vth iteration)
+       # 4. Reconstruct path from start to end
+       # 5. Return (path, cost)
+   ```
 
-1. `test_dijkstra_rejects_negative_weights`: Expects `ValueError` to be raised when negative weights are detected
-2. `test_dijkstra_finds_optimal_path_despite_negative_edge`: Expects optimal path `["A", "C", "D", "F", "B"]` with cost `1.0`
+   **Key Implementation Details**:
+   - Initialize: `distances = {node: float('inf') for all nodes}`, `distances[start] = 0`
+   - Relax edges: For each edge (u, v, w), if `distances[u] + w < distances[v]`, update `distances[v]`
+   - Negative cycle detection: If any edge can still be relaxed on Vth iteration, cycle exists
+   - Path reconstruction: Track `predecessor` dictionary during relaxation
 
-### Fix Requirements
+### 4.3 Implement Auto Algorithm Selector
 
-#### 1. Output Directory Structure
+1. **Create `shortest_path(graph, start, end, algorithm='auto')` function**:
+   
+   **Purpose**: Intelligently choose between Dijkstra and Bellman-Ford based on graph properties
+   
+   **Implementation**:
+   ```python
+   def shortest_path(graph, start, end, algorithm='auto'):
+       """
+       Find shortest path with automatic or manual algorithm selection.
+       
+       Args:
+           graph: Graph instance
+           start: Starting node
+           end: Destination node
+           algorithm: 'auto', 'dijkstra', or 'bellman_ford'
+       
+       Returns: (path_list, total_cost)
+       """
+       if algorithm == 'auto':
+           # Auto-select based on graph characteristics
+           if graph.has_negative_weights():
+               return bellman_ford_shortest_path(graph, start, end)
+           else:
+               return dijkstra_shortest_path(graph, start, end)
+       elif algorithm == 'dijkstra':
+           return dijkstra_shortest_path(graph, start, end)
+       elif algorithm == 'bellman_ford':
+           return bellman_ford_shortest_path(graph, start, end)
+       else:
+           raise ValueError(f"Unknown algorithm: {algorithm}")
+   ```
 
-Please create a new subdirectory for the fixed project. **Do NOT modify the original `issue_project` directory**.
+## Phase 5: Update Tests (test_routing_negative_weight.py)
 
-Required fixed project directory structure:
+1. **Update test expectations** based on fix approach:
+
+   **Test 1: Dijkstra Rejection Test**
+   ```python
+   def test_dijkstra_rejects_negative_weights():
+       """Dijkstra should raise ValueError for graphs with negative weights."""
+       graph = Graph.from_json("../data/graph_negative_weight.json")
+       
+       with pytest.raises(ValueError, match="negative-weight edges"):
+           dijkstra_shortest_path(graph, "A", "B")
+   ```
+
+   **Test 2: Bellman-Ford Correctness Test**
+   ```python
+   def test_bellman_ford_finds_optimal_path():
+       """Bellman-Ford should find optimal path A→C→D→F→B with cost 1."""
+       graph = Graph.from_json("../data/graph_negative_weight.json")
+       
+       path, cost = bellman_ford_shortest_path(graph, "A", "B")
+       
+       assert path == ["A", "C", "D", "F", "B"]
+       assert cost == 1.0
+   ```
+
+   **Test 3: Auto Algorithm Selection Test**
+   ```python
+   def test_auto_algorithm_selection():
+       """Auto mode should choose Bellman-Ford for negative-weight graphs."""
+       graph = Graph.from_json("../data/graph_negative_weight.json")
+       
+       path, cost = shortest_path(graph, "A", "B", algorithm='auto')
+       
+       assert path == ["A", "C", "D", "F", "B"]
+       assert cost == 1.0
+   ```
+
+2. **Add necessary imports**:
+   - Import `bellman_ford_shortest_path`, `shortest_path` from routing module
+
+## Phase 6: Update Documentation
+
+1. **Update README.md**:
+   - Change title to indicate this is the FIXED version
+   - Remove "Known Issues" section or mark as RESOLVED
+   - Add "Fix Summary" section explaining:
+     - What bugs were fixed (Dijkstra visit marking, validation)
+     - What features were added (Bellman-Ford, auto selection)
+     - Algorithm selection guidelines
+   
+   **Algorithm Selection Guidelines**:
+   ```markdown
+   ## Algorithm Selection Guide
+   
+   - **Dijkstra's Algorithm** (`dijkstra_shortest_path`):
+     - Use for: Graphs with non-negative weights only
+     - Time complexity: O((V + E) log V)
+     - Behavior: Raises ValueError if negative weights detected
+   
+   - **Bellman-Ford Algorithm** (`bellman_ford_shortest_path`):
+     - Use for: Graphs with negative weights (but no negative cycles)
+     - Time complexity: O(V × E)
+     - Behavior: Raises ValueError if negative-weight cycle detected
+   
+   - **Auto Selection** (`shortest_path(..., algorithm='auto')`):
+     - Automatically chooses optimal algorithm based on graph properties
+     - Recommended for general use
+   ```
+
+2. **Copy unchanged files**:
+   - Copy `pytest.ini` from original (no changes needed)
+   - Copy `requirements.txt` from original (pytest==7.4.4)
+   - Copy `data/graph_negative_weight.json` from original (test data)
+   - Copy `src/logistics/__init__.py` from original (module init)
+
+## Phase 7: Test Validation
+
+1. **Run initial test suite**:
+   ```bash
+   cd "C:\BugBash\workSpace1\oswe-mini-prime-new\fixed_project"
+   pytest -q
+   ```
+   - Expected output: `3 passed in 0.10s` (or similar)
+   - All 3 tests should PASS
+
+2. **Verify Python and pytest versions**:
+   ```bash
+   python -c "import sys, pytest; print('python', sys.version.replace('\n',' ')); print('pytest', pytest.__version__)"
+   ```
+   - Expected: Python 3.12.10, pytest 7.4.4
+
+3. **Capture test results**:
+   - Document that all tests pass (100% pass rate)
+   - Note execution time (~0.10s)
+   - Confirm no errors or failures
+
+# Output Specification
+
+## Directory Structure
+Complete fixed project at: `C:\BugBash\workSpace1\oswe-mini-prime-new\fixed_project/`
+
+## Key Deliverables
+
+1. **Enhanced Graph Module (`src/logistics/graph.py`)**:
+   - New method: `edges()` - iterator for all edges
+   - New method: `has_negative_weights()` - negative weight detection
+   - All existing functionality preserved
+
+2. **Fixed and Enhanced Routing Module (`src/logistics/routing.py`)**:
+   - Fixed: `dijkstra_shortest_path()` with correct visit marking + validation
+   - New: `bellman_ford_shortest_path()` for negative-weight graphs
+   - New: `shortest_path(..., algorithm='auto')` for intelligent algorithm selection
+   - Clear error messages for precondition violations
+
+3. **Updated Test Suite (`tests/test_routing_negative_weight.py`)**:
+   - Test 1: Dijkstra rejects negative weights (raises ValueError)
+   - Test 2: Bellman-Ford finds optimal path (A→C→D→F→B, cost=1)
+   - Test 3: Auto selection chooses correct algorithm
+   - All tests must PASS
+
+4. **Updated Documentation (`README.md`)**:
+   - Mark issues as RESOLVED
+   - Algorithm selection guidelines
+   - Usage examples for all three functions
+   - Time complexity notes
+
+5. **Supporting Files**:
+   - `pytest.ini` - test configuration
+   - `requirements.txt` - dependencies
+   - `data/graph_negative_weight.json` - test graph data
+   - `src/logistics/__init__.py` - module initialization
+
+## Expected Test Output
 
 ```
-fixed_project/                                   # Fixed project (CREATE THIS)
-├── README.md                                   # Updated documentation explaining fix
-├── requirements.txt                            # Dependencies
-├── pytest.ini                                  # Pytest configuration
-├── data/
-│   └── graph_negative_weight.json             # Test graph data
-├── src/
-│   └── logistics/
-│       ├── __init__.py                        # Module initialization
-│       ├── graph.py                           # Graph data structure
-│       └── routing.py                         # Fixed routing algorithm
-└── tests/
-    └── test_routing_negative_weight.py        # Fixed tests (should pass)
+============================= test session starts =============================
+collected 3 items
+
+tests/test_routing_negative_weight.py ...                                [100%]
+
+============================== 3 passed in 0.10s ==============================
 ```
 
-#### 2. Fix Objectives
+## Behavior Verification
 
-- **Add Input Validation**: Detect negative-weight edges before running Dijkstra
-- **Fix Dijkstra Implementation**: Correctly handle node visit marking (mark when finalized, not when discovered)
-- **Provide Alternative Solution**: For graphs with negative weights, either reject with error or implement Bellman-Ford algorithm
-- **Pass All Tests**: Fixed implementation should pass both test cases
+### Dijkstra Behavior
+```python
+# With negative weights - should RAISE error
+graph = Graph.from_json("data/graph_negative_weight.json")
+dijkstra_shortest_path(graph, "A", "B")  
+# Raises: ValueError("Graph contains negative-weight edges; Dijkstra is unsafe")
 
-#### 3. Files That Need Fixing
+# With non-negative weights - should work normally
+graph_positive = Graph(...)  # All edges >= 0
+path, cost = dijkstra_shortest_path(graph_positive, "A", "B")
+# Returns: optimal path and cost
+```
 
-1. **src/logistics/routing.py**
-   - Add negative weight detection logic
-   - Fix node visit marking timing in Dijkstra algorithm
-   - Optional: Implement Bellman-Ford algorithm as alternative for negative-weight graphs
+### Bellman-Ford Behavior
+```python
+# With negative weights - should find optimal path
+graph = Graph.from_json("data/graph_negative_weight.json")
+path, cost = bellman_ford_shortest_path(graph, "A", "B")
+# Returns: (["A", "C", "D", "F", "B"], 1.0)
 
-2. **src/logistics/graph.py** (Optional)
-   - Can add helper method to detect negative weights in graph
-   - Example: `has_negative_weights()` method
+# With negative cycle - should RAISE error
+graph_with_cycle = Graph(...)  # Contains negative cycle
+bellman_ford_shortest_path(graph_with_cycle, "A", "B")
+# Raises: ValueError("Negative-weight cycle detected")
+```
 
-3. **tests/test_routing_negative_weight.py** (May need adjustment)
-   - Depending on fix approach, test expectations may need adjustment
-   - If choosing error-raising approach, keep first test
-   - If implementing Bellman-Ford, keep second test
+### Auto Selection Behavior
+```python
+# Automatically chooses Bellman-Ford for negative weights
+graph = Graph.from_json("data/graph_negative_weight.json")
+path, cost = shortest_path(graph, "A", "B", algorithm='auto')
+# Returns: (["A", "C", "D", "F", "B"], 1.0) via Bellman-Ford
 
-4. **README.md**
-   - Update documentation to explain issue is fixed
-   - Describe fix approach (validation/rejection or algorithm replacement)
+# Automatically chooses Dijkstra for non-negative weights
+graph_positive = Graph(...)
+path, cost = shortest_path(graph_positive, "A", "B", algorithm='auto')
+# Returns: optimal path via Dijkstra (faster)
+```
 
-#### 4. Fix Approach Options
+# Constraints & Preferences
 
-You can choose one of the following approaches:
+## Must Do Requirements
+- Create fixed project in NEW directory at specified workspace path
+- Read ALL source files before implementing fixes
+- Fix Dijkstra visit marking bug (mark on finalization, not discovery)
+- Add negative weight validation to Dijkstra (raise ValueError if detected)
+- Implement Bellman-Ford algorithm with negative cycle detection
+- Implement auto algorithm selector (`shortest_path` with `algorithm='auto'`)
+- Add helper methods to Graph class (`.edges()`, `.has_negative_weights()`)
+- Update tests to verify all three approaches (Dijkstra rejection, Bellman-Ford correctness, auto selection)
+- Ensure ALL 3 tests pass (100% pass rate)
+- Update README.md with algorithm selection guidelines
 
-**Approach A: Validate and Reject**
-- Scan all edges at the start of `dijkstra_shortest_path`
-- If any negative-weight edge is found, raise `ValueError`
-- Fix visit marking issue in Dijkstra implementation
+## Must NOT Do
+- Do NOT modify the original `./issue_project/` directory
+- Do NOT change graph data file (`graph_negative_weight.json`)
+- Do NOT add new dependencies beyond pytest==7.4.4
+- Do NOT implement algorithms that silently return incorrect results
+- Do NOT skip negative cycle detection in Bellman-Ford
 
-**Approach B: Algorithm Switching**
-- Implement Bellman-Ford algorithm (supports negative weights)
-- Automatically switch to Bellman-Ford when negative weights detected
-- Or provide two separate functions for user selection
+## Code Quality Standards
+- Clear, descriptive variable names (`distances`, `predecessor`, `visited`)
+- Comprehensive docstrings for all public functions
+- Explicit error messages (e.g., "Graph contains negative-weight edges; Dijkstra is unsafe")
+- Comments explaining algorithm steps (especially double rotation in Bellman-Ford relaxation)
+- Follow PEP 8 style guidelines
+- Type hints recommended (e.g., `def shortest_path(...) -> tuple[list[str], float]:`)
 
-**Approach C: Fix Dijkstra + Validation**
-- Fix Dijkstra implementation issue (visit marking)
-- Add negative weight validation
-- Clearly document algorithm limitations
+## Implementation Approach Preference
+- **Chosen Approach**: Algorithm Switching (Approach B)
+  - Implement both Dijkstra (with validation) and Bellman-Ford
+  - Provide auto-selection via `shortest_path(..., algorithm='auto')`
+  - Clear API: users can choose algorithm explicitly or let system decide
 
-#### 5. Constraints
+# Quality Gates
 
-- **Keep API Clear**: Function signatures should be clear and understandable
-- **Ensure Tests Pass**: After fixing, both tests should pass
-- **Complete Documentation**: Explain algorithm applicability conditions and limitations
+## Success Criteria - All Must Be Met
 
-### Technical Background
+### Phase 1: File Reading & Analysis
+1. ✅ All 7+ source files read from original project
+2. ✅ Dijkstra visit marking bug identified (line ~23 in routing.py)
+3. ✅ Missing validation logic identified
+4. ✅ Test expectations understood (3 test cases)
 
-**Dijkstra Algorithm Limitations**:
-- Only works on non-negative weight graphs
-- Uses greedy strategy; once a node is finalized, it's never updated
-- Negative weights violate this assumption
+### Phase 2: Project Structure Creation
+5. ✅ `fixed_project/` directory created at workspace path
+6. ✅ All 5 subdirectories created (data, src, src/logistics, tests)
+7. ✅ File structure matches specification (8 files total)
 
-**Bellman-Ford Algorithm**:
-- Supports negative-weight edges (but not negative-weight cycles)
-- Higher time complexity: O(V×E) vs Dijkstra's O((V+E)logV)
-- Can detect negative-weight cycles
+### Phase 3: Graph Enhancements
+8. ✅ `graph.py` enhanced with `.edges()` method
+9. ✅ `graph.py` enhanced with `.has_negative_weights()` method
+10. ✅ Existing graph functionality preserved
 
----
+### Phase 4: Routing Fixes & Enhancements
+11. ✅ Dijkstra fixed: visit marking on finalization, not discovery
+12. ✅ Dijkstra enhanced: negative weight validation added
+13. ✅ Bellman-Ford implemented: correct relaxation, negative cycle detection
+14. ✅ Auto selector implemented: `shortest_path(..., algorithm='auto')`
 
-## PART 2: COMPREHENSIVE VALIDATION REQUIREMENTS
+### Phase 5: Test Updates
+15. ✅ Test 1 updated: Dijkstra rejection of negative weights
+16. ✅ Test 2 updated: Bellman-Ford correctness (path=["A","C","D","F","B"], cost=1.0)
+17. ✅ Test 3 added: Auto algorithm selection verification
+18. ✅ All necessary imports added to test file
 
-After completing the fix, you must perform a full validation of the completed project. This is a critical step to ensure the fix is successful and the system works correctly.
+### Phase 6: Documentation
+19. ✅ README.md updated with fix summary
+20. ✅ Algorithm selection guidelines added
+21. ✅ Usage examples provided for all three functions
 
-### Validation Tasks
+### Phase 7: Validation
+22. ✅ pytest run executed: `pytest -q`
+23. ✅ All 3 tests PASSED (100% pass rate)
+24. ✅ Execution time reasonable (~0.10s)
+25. ✅ Python 3.12.10 and pytest 7.4.4 verified
+26. ✅ No errors, warnings, or failures observed
 
-1. **Environment Setup and Project Launch**
-   - Install all required dependencies from requirements.txt
-   - Verify that the project environment is correctly configured
-   - Ensure all modules can be imported without errors
-   - Confirm that the system launches successfully without runtime errors
+### Behavioral Verification
+27. ✅ Dijkstra raises ValueError for negative-weight graphs
+28. ✅ Bellman-Ford finds correct optimal path (A→C→D→F→B, cost=1)
+29. ✅ Auto selector chooses Bellman-Ford for negative-weight graphs
+30. ✅ Auto selector chooses Dijkstra for non-negative graphs
 
-2. **Execute All Automated Test Cases**
-   - Run the complete test suite using pytest
-   - Execute all test cases defined in tests/test_routing_negative_weight.py
-   - Verify that both test cases pass:
-     - `test_dijkstra_rejects_negative_weights` (or equivalent based on fix approach)
-     - `test_dijkstra_finds_optimal_path_despite_negative_edge` (or equivalent)
+## Critical Implementation Notes
 
-3. **Capture and Report Results**
-   - Capture all test execution outputs
-   - Record any logs, error traces, or warning messages
-   - Document the execution environment details (Python version, pytest version, etc.)
-   - Save all output for review
+### Dijkstra Visit Marking Fix
+- **Bug Pattern**: `visited.add(neighbor)` during neighbor exploration
+- **Fix Pattern**: `visited.add(current_node)` when popping from priority queue
+- **Rationale**: Nodes should be marked as "finalized" only when their minimum distance is confirmed, not when first discovered
 
-4. **Functional Verification**
-   - Confirm that the routing algorithm correctly handles negative-weight edges
-   - Verify that the system produces the expected optimal path for the test graph
-   - Ensure the system behaves consistently across all test scenarios
-   - Validate that error handling works as expected (if using validation approach)
+### Bellman-Ford Relaxation
+- **Relaxation Condition**: `if distances[u] + weight < distances[v]:`
+- **Update Operations**: `distances[v] = distances[u] + weight`, `predecessor[v] = u`
+- **Iteration Count**: Exactly V-1 iterations (V = number of vertices)
+- **Cycle Detection**: If any edge can be relaxed on Vth iteration, negative cycle exists
 
-5. **Test Results Summary**
-   - Provide a clear summary of all test results
-   - Explicitly state whether ALL test cases passed or failed
-   - If any test fails, provide detailed failure analysis including:
-     - Which test failed
-     - Expected vs actual results
-     - Error messages and stack traces
-     - Potential root causes
-   - Confirm that the project meets all expected functionality requirements
+### Algorithm Selection Logic
+```python
+if algorithm == 'auto':
+    if graph.has_negative_weights():
+        use Bellman-Ford  # Slower but handles negatives
+    else:
+        use Dijkstra      # Faster for non-negative graphs
+```
 
-### Expected Successful Outcome
+### Test Graph Expected Results
+- Graph: `A→B(5), A→C(2), C→D(1), D→F(-3), F→B(1), A→E(1), E→B(6)`
+- Optimal A→B: `A→C→D→F→B` with cost **1** (not A→B with cost 5)
+- Path calculation: 2 + 1 + (-3) + 1 = 1
 
-A successful validation should demonstrate:
-- All dependencies installed without conflicts
-- No import errors or module loading issues
-- All automated tests pass (100% pass rate)
-- The routing algorithm correctly finds the optimal path: `A → C → D → F → B` with cost `1.0`
-- System behavior is predictable and documented
-- No unexpected errors or warnings during execution
-
-### Validation Output Requirements
-
-Provide a comprehensive validation report that includes:
-1. **Environment Details**: Python version, installed packages, OS information
-2. **Test Execution Log**: Complete pytest output showing all test results
-3. **Test Summary**: Number of tests passed/failed/skipped
-4. **Performance Metrics**: Test execution time (if available)
-5. **Final Verdict**: Clear statement whether the project is fully functional and all tests pass
-
----
-
-## COMPLETE WORKFLOW
-
-To successfully complete this task, follow this workflow:
-
-1. **Analyze the Issue**: Review the problem description and understand the root causes
-2. **Implement the Fix**: Create the fixed_project directory with corrected code
-3. **Setup Environment**: Install dependencies and prepare the test environment
-4. **Run Tests**: Execute all test cases and capture results
-5. **Validate Functionality**: Verify the system works as expected
-6. **Report Results**: Provide comprehensive summary of validation outcomes
-
----
-
-## SUCCESS CRITERIA
-
-This task is considered complete when:
-- [x] A new `fixed_project` directory is created with corrected code
-- [x] All source files are properly fixed (routing.py, graph.py, etc.)
-- [x] Documentation is updated (README.md)
-- [x] Test environment is successfully set up
-- [x] ALL automated test cases pass (100% pass rate)
-- [x] System correctly handles negative-weight edges
-- [x] Optimal path calculation is verified to be correct
-- [x] Complete validation report is provided with explicit pass/fail status
-- [x] No errors or warnings during execution
-
----
-
-## DELIVERABLES
-
-1. **fixed_project/** directory containing:
-   - Fixed source code (routing.py with corrected algorithm)
-   - Updated documentation (README.md)
-   - All necessary configuration files
-   - Test files
-
-2. **Validation Report** including:
-   - Complete test execution output
-   - Environment setup confirmation
-   - Test results summary
-   - Explicit statement: "All test cases PASSED" or detailed failure analysis
-
-3. **Final Confirmation**: Clear statement that the project is fully functional and production-ready
-
----
-
-## IMPORTANT NOTES
-
-- Do NOT modify the original `issue_project` directory
-- Ensure all changes are made in the new `fixed_project` directory
-- Both test cases must pass for successful completion
-- Provide detailed output for all validation steps
-- If any test fails, provide comprehensive debugging information
-- The validation phase is as critical as the fix phase - do not skip it
-
-Begin by analyzing the issue_project code, implementing the fix in fixed_project, and then performing the complete validation workflow as specified above.
+Execute all steps systematically. Read all source files before creating fixes. Implement both Dijkstra and Bellman-Ford. Ensure all 3 tests pass. Update documentation with clear algorithm selection guidelines.
